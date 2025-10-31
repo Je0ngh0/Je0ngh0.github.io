@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>강화 · 환생 · 보상 — 스킵 게임</title>
+  <meta name="description" content="강화, 환생, 보상(스킵 토큰) 시스템을 갖춘 가벼운 클릭커/아이들 웹 게임" />
+  <meta name="theme-color" content="#111827" />
+  <style>
+    :root {
+      /* 기본(다크) 팔레트 */
+      --bg: #0b1020;
+      --panel: #111827;
+      --panel-2: #0f172a;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #60a5fa;
+      --accent-2: #34d399;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --ring: #1f2937;
+      --shadow: 0 10px 25px rgba(0,0,0,.4);
+      --radius: 16px;
+    }
+    /* 강제 다크/라이트 테마 — 버튼으로 전환 시 OS 선호보다 우선 적용 */
+    :root[data-theme='dark'] {
+      --bg: #0b1020;
+      --panel: #111827;
+      --panel-2: #0f172a;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --ring: #1f2937;
+      --shadow: 0 10px 25px rgba(0,0,0,.4);
+    }
+    :root[data-theme='light'] {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --panel-2: #f1f5f9;
+      --text: #0f172a;
+      --muted: #475569;
+      --ring: #e2e8f0;
+      --shadow: 0 8px 20px rgba(2,6,23,.08);
+    }
+    /* 자동: OS 선호를 따르되, data-theme='auto' 일 때만 변경 */
+    :root[data-theme='auto'] { /* 기본은 다크값(위 :root) */ }
+    @media (prefers-color-scheme: light) {
+      :root[data-theme='auto'] {
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --panel-2: #f1f5f9;
+        --text: #0f172a;
+        --muted: #475569;
+        --ring: #e2e8f0;
+        --shadow: 0 8px 20px rgba(2,6,23,.08);
+      }
+    }
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Helvetica, Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: radial-gradient(1200px 700px at 70% -10%, #1f2937 0%, var(--bg) 60%) fixed;
+      color: var(--text);
+    }
+    .container {
+      max-width: 1100px; margin: 0 auto; padding: 20px; box-sizing: border-box;
+      display: grid; gap: 16px;
+      grid-template-columns: 1fr; grid-auto-rows: min-content;
+    }
+    header.hero {
+      display:flex; gap: 12px; align-items:center; justify-content: space-between;
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+      padding: 14px 16px; border-radius: var(--radius);
+      border: 1px solid var(--ring); box-shadow: var(--shadow);
+    }
+    .title { display:flex; gap: 10px; align-items:center; }
+    .title h1 { font-size: clamp(18px, 3vw, 24px); margin: 0; }
+    .badge { font-size: 12px; padding: 4px 8px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--ring); color: var(--muted); }
+    .controls { display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
+    button, .btn {
+      -webkit-tap-highlight-color: transparent;
+      appearance: none; border: 1px solid var(--ring); color: var(--text);
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      padding: 10px 14px; border-radius: 12px; cursor: pointer; transition: transform .04s ease, border-color .2s ease, background .2s ease;
+      box-shadow: var(--shadow); font-weight: 600; letter-spacing: .2px;
+    }
+    button:active { transform: translateY(1px) scale(.99); }
+    button[disabled] { opacity: .55; cursor: not-allowed; }
+    .btn-accent { border-color: rgba(96,165,250,.5); }
+    .btn-green { border-color: rgba(52,211,153,.5); }
+    .btn-warn { border-color: rgba(245,158,11,.5); }
+    .btn-danger { border-color: rgba(239,68,68,.5); }
+
+    .grid { display:grid; gap: 12px; }
+    .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid.responsive { grid-template-columns: repeat(12, 1fr); }
+
+    .card { background: linear-gradient(180deg, var(--panel), var(--panel-2)); border: 1px solid var(--ring); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); }
+    .card h3 { margin: 0 0 8px; font-size: 16px; color: var(--muted); font-weight: 700; letter-spacing: .3px; }
+    .stat { display:flex; align-items:center; justify-content: space-between; gap: 8px; }
+    .stat .label { font-size: 12px; color: var(--muted); }
+    .stat .value { font-weight: 800; font-size: clamp(18px, 4vw, 24px); }
+    .muted { color: var(--muted); }
+
+    .tabbar { display:flex; gap: 8px; flex-wrap: wrap; }
+    .tabbar button[aria-selected="true"] { outline: 2px solid var(--accent); }
+
+    .buy-amount { display:flex; gap: 6px; }
+    .buy-amount button { padding: 6px 10px; font-size: 12px; }
+
+    .progress {
+      height: 10px; background: #0b1328; border: 1px solid var(--ring); border-radius: 999px; overflow:hidden;
+    }
+    .progress > span { display:block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); width: 0%; transition: width .6s cubic-bezier(.22,1,.36,1); }
+
+    .two-col { display: grid; grid-template-columns: 1.3fr .7fr; gap: 12px; }
+
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+    .list { display:flex; flex-direction: column; gap: 10px; }
+    .row { display:flex; align-items:center; justify-content: space-between; gap: 8px; }
+    .row .mini { font-size: 12px; }
+
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; background: #0b1328; border: 1px solid var(--ring); padding: 2px 6px; border-radius: 6px; color: var(--muted); }
+
+    .footer { text-align:center; color: var(--muted); font-size: 12px; padding: 20px 4px 60px; }
+
+    .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--ring); padding: 10px 14px; border-radius: 10px; box-shadow: var(--shadow); color: var(--text); display:none; z-index: 50; }
+
+    .hidden { display:none !important; }
+    .right { text-align:right; }
+
+    /* Large tap targets for mobile */
+    .lg-tap { padding: 14px 16px; font-size: 16px; }
+
+    /* Link look */
+    .link { color: var(--accent); text-decoration: none; border-bottom: 1px dashed rgba(96,165,250,.4); }
+    .link:hover { border-bottom-color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="hero">
+      <div class="title">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2l2.39 4.84L20 8l-4 3.9.94 5.48L12 15.77 7.06 17.38 8 13 4 8l5.61-.16L12 2z" fill="currentColor" opacity=".9"/></svg>
+        <h1>강화 · 환생 · 보상 — 스킵 게임</h1>
+        <span class="badge">v1.0</span>
+      </div>
+      <div class="controls">
+        <button id="themeToggle" class="btn" title="테마 전환" aria-label="테마 전환">🌓</button>
+        <button id="saveBtn" class="btn" aria-label="저장">저장</button>
+        <button id="exportBtn" class="btn" aria-label="내보내기">내보내기</button>
+        <label class="kbd" title="자동 저장">자동 저장</label>
+      </div>
+    </header>
+
+    <!-- STATS BAR -->
+    <section class="grid cols-3" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+      <div class="card stat"><div>
+        <div class="label">보유 골드</div>
+        <div id="goldLabel" class="value">0</div></div>
+        <div class="right muted mini">GPS <span id="gpsLabel">0</span></div></div>
+      <div class="card stat"><div>
+        <div class="label">강화 레벨</div>
+        <div id="levelLabel" class="value">0</div></div>
+        <div class="right muted mini">배수 <span id="multLabel">x1.00</span></div></div>
+      <div class="card stat"><div>
+        <div class="label">환생석 · 스킵토큰</div>
+        <div class="value"><span id="stoneLabel">0</span>석 · <span id="tokenLabel">0</span>개</div></div>
+        <div class="right muted mini">최고 레벨 <span id="bestLabel">0</span></div></div>
+    </section>
+
+    <!-- TABS -->
+    <nav class="tabbar">
+      <button class="btn btn-accent lg-tap" data-tab="upgrade" aria-selected="true">⚔️ 강화</button>
+      <button class="btn btn-green lg-tap" data-tab="rewards">🎁 보상</button>
+      <button class="btn btn-warn lg-tap" data-tab="rebirth">♻️ 환생</button>
+      <button class="btn lg-tap" data-tab="settings">⚙️ 설정/도움말</button>
+    </nav>
+
+    <!-- TAB PANES -->
+    <main class="two-col">
+      <!-- LEFT: MAIN CONTENT PER TAB -->
+      <section id="tab-upgrade" class="card">
+        <h3>강화</h3>
+        <div class="list">
+          <div class="row">
+            <div>
+              <div class="muted mini">구매 수량</div>
+              <div class="buy-amount">
+                <button class="btn" data-buy="1">x1</button>
+                <button class="btn" data-buy="10">x10</button>
+                <button class="btn" data-buy="100">x100</button>
+              </div>
+            </div>
+            <div class="right">
+              <div class="muted mini">다음 비용</div>
+              <div id="nextCost" class="value" style="font-size:18px">0</div>
+            </div>
+          </div>
+
+          <button id="upgradeBtn" class="btn btn-accent lg-tap" style="width:100%">
+            레벨 올리기 (+공격/수익) — <span id="buyLabel">x1</span>
+          </button>
+
+          <div>
+            <div class="muted mini">진행도 (다음 마일스톤까지)</div>
+            <div class="progress" aria-label="마일스톤 진행도"><span id="milestoneBar" style="width:0%"></span></div>
+            <div class="row mini muted"><span>마일스톤: 25레벨 단위로 스킵 토큰 획득</span><span><span id="milestoneInfo">0</span> / 25</span></div>
+          </div>
+
+          <hr style="border:0;border-top:1px solid var(--ring)">
+
+          <h3>강화 스킵 (보상 사용)</h3>
+          <div class="grid cols-3">
+            <button class="btn btn-green" data-skip="1">스킵 +5레벨 (토큰 1)</button>
+            <button class="btn btn-green" data-skip="5">스킵 +25레벨 (토큰 5)</button>
+            <button class="btn btn-green" data-skip="10">스킵 +50레벨 (토큰 10)</button>
+          </div>
+          <div class="muted mini">스킵은 골드 비용 없이 레벨을 즉시 올립니다. 1토큰당 5레벨 상승.</div>
+
+          <hr style="border:0;border-top:1px solid var(--ring)">
+
+          <h3>수동 수익 (클릭)</h3>
+          <button id="clickBtn" class="btn lg-tap" style="width:100%">탭/클릭하여 골드 획득</button>
+          <div class="row mini muted"><span>클릭당 수익: <span id="cpcLabel">1</span></span><span>자동수익(GPS): <span id="gpsLabel2">0</span></span></div>
+        </div>
+      </section>
+
+      <!-- RIGHT: SIDE PANELS PER TAB -->
+      <aside id="tab-rewards" class="card hidden">
+        <h3>보상</h3>
+        <div class="list">
+          <div class="card" style="background:transparent; border-style:dashed">
+            <div class="row">
+              <div>
+                <div class="muted mini">무료 보상 (쿨다운)</div>
+                <div><strong>스킵 토큰 1</strong> + 골드 약간</div>
+              </div>
+              <button id="claimFreeBtn" class="btn btn-green">받기</button>
+            </div>
+            <div class="mini muted">다음 수령 가능: <span id="freeTimer">지금</span></div>
+          </div>
+
+          <div class="card" style="background:transparent; border-style:dashed">
+            <div class="row"><strong>미션</strong><span class="mini muted">달성 시 스킵 토큰 지급</span></div>
+            <div class="list" id="missionList"></div>
+          </div>
+
+          <div class="card" style="background:transparent; border-style:dashed">
+            <div class="row"><strong>마일스톤 상자</strong><span class="mini muted">25레벨마다 자동 지급</span></div>
+            <div class="mini muted">지금까지 획득한 마일스톤: <span id="milestoneCount">0</span>회</div>
+          </div>
+        </div>
+      </aside>
+
+      <aside id="tab-rebirth" class="card hidden">
+        <h3>환생</h3>
+        <div class="list">
+          <div class="row">
+            <div>
+              <div class="muted mini">환생 설명</div>
+              <div>환생을 하면 <strong>골드, 레벨</strong>이 초기화되고 <strong>환생석</strong>을 획득합니다. 환생석 1개마다 수익이 <strong>+10%</strong> 영구 상승합니다.</div>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <div class="muted mini">이번 환생 보상 (현재 레벨 기준)</div>
+              <div class="value" id="rebirthPreview">0 석</div>
+            </div>
+            <button id="rebirthBtn" class="btn btn-warn lg-tap">환생하기</button>
+          </div>
+          <div class="mini muted">공식: ⌊현재 레벨 / 50⌋ 석</div>
+        </div>
+      </aside>
+
+      <aside id="tab-settings" class="card hidden">
+        <h3>설정 & 도움말</h3>
+        <div class="list">
+          <div class="row"><div><strong>테마</strong><div class="mini muted">시스템/라이트/다크</div></div>
+            <div class="row" style="gap:6px">
+              <button class="btn" data-theme="auto">시스템</button>
+              <button class="btn" data-theme="light">라이트</button>
+              <button class="btn" data-theme="dark">다크</button>
+            </div>
+          </div>
+
+          <div class="card" style="background:transparent; border-style:dashed">
+            <div class="row"><strong>저장/불러오기</strong><span class="mini muted">브라우저에 자동 저장됩니다.</span></div>
+            <div class="grid cols-3">
+              <button id="importBtn" class="btn">불러오기</button>
+              <button id="downloadBtn" class="btn">파일로 내보내기</button>
+              <button id="hardResetBtn" class="btn btn-danger">전체 초기화</button>
+            </div>
+            <textarea id="ioBox" rows="4" style="width:100%; margin-top:8px; background:#0b1328; color:var(--text); border:1px solid var(--ring); border-radius:8px; padding:8px" placeholder='여기에 저장 데이터를 붙여넣고 "불러오기"를 누르세요.'></textarea>
+          </div>
+
+          <details class="card" style="background:transparent">
+            <summary><strong>게임 팁</strong></summary>
+            <ul class="mini muted" style="line-height:1.6">
+              <li>강화 비용은 레벨이 오를수록 기하급수적으로 증가합니다. 필요하면 <strong>스킵 토큰</strong>으로 구간을 건너뛰세요.</li>
+              <li>25레벨마다 자동으로 마일스톤 토큰을 얻습니다.</li>
+              <li>환생은 레벨이 높을수록 더 많은 환생석을 주며, 수익에 영구 배수를 제공합니다.</li>
+            </ul>
+          </details>
+        </div>
+      </aside>
+    </main>
+
+    <div class="footer">Made for GitHub Pages · 클라이언트 저장(LocalStorage) · 반응형 UI</div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // ===== Utilities =====
+    const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+    const format = (n) => {
+      if (!isFinite(n)) return '∞';
+      const abs = Math.abs(n);
+      if (abs < 1000) return n.toFixed(0);
+      const units = ['K','M','B','T','Qa','Qi'];
+      let u = -1; let v = abs;
+      while (v >= 1000 && u < units.length - 1) { v /= 1000; u++; }
+      return (Math.sign(n) < 0 ? '-' : '') + v.toFixed(2) + units[u];
+    };
+    const now = () => Date.now();
+
+    // ===== Game State =====
+    const SAVE_KEY = 'skipgame_v1';
+
+    const DefaultState = () => ({
+      gold: 0,
+      level: 0,
+      best: 0,
+      stones: 0, // 환생석
+      tokens: 0, // 스킵 토큰
+      buyAmt: 1, // 1/10/100
+      nextFreeAt: 0, // 무료 보상 가능 시각(ms)
+      missions: { // 미션 클레임 여부
+        L25: false, L50: false, L100: false, L200: false
+      },
+      milestonesClaimed: 0, // 25단위 상자 처리 개수
+      theme: 'auto',
+      lastTick: now(),
+    });
+
+    let S = load();
+
+    // ===== Balance / Formulas =====
+    const COST_BASE = 10;
+    const COST_GROWTH = 1.15; // 기하 증가률
+    const GPS_PER_LEVEL = 0.5; // 초당 골드
+    const CPC_BASE = 1; // 클릭 기본 골드
+    const CPC_PER_LEVEL = 0.1; // 레벨당 추가
+    const REBIRTH_RATE = 0.10; // 환생석 1개당 10%
+
+    function multiplier() {
+      return 1 + (S.stones * REBIRTH_RATE);
+    }
+
+    function nextCostSingle(level) {
+      return COST_BASE * Math.pow(COST_GROWTH, level);
+    }
+
+    // GP sum for buying n levels at once
+    function costFor(level, n) {
+      const r = COST_GROWTH;
+      const a = nextCostSingle(level);
+      if (n === 1) return a;
+      return a * (Math.pow(r, n) - 1) / (r - 1);
+    }
+
+    function gps() { return S.level * GPS_PER_LEVEL * multiplier(); }
+    function cpc() { return (CPC_BASE + S.level * CPC_PER_LEVEL) * multiplier(); }
+
+    function milestonesReached() { return Math.floor(S.level / 25); }
+
+    function stonesGainPreview() { return Math.floor(S.level / 50); }
+
+    // ===== Save/Load =====
+    function save() {
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {}
+      S.lastTick = now();
+    }
+    function load() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return DefaultState();
+        const obj = JSON.parse(raw);
+        return Object.assign(DefaultState(), obj);
+      } catch (e) { return DefaultState(); }
+    }
+
+    // ===== UI Refs =====
+    const $ = (q) => document.querySelector(q);
+    const $$ = (q) => Array.from(document.querySelectorAll(q));
+
+    const goldLabel = $('#goldLabel');
+    const gpsLabel = $('#gpsLabel');
+    const gpsLabel2 = $('#gpsLabel2');
+    const levelLabel = $('#levelLabel');
+    const multLabel = $('#multLabel');
+    const stoneLabel = $('#stoneLabel');
+    const tokenLabel = $('#tokenLabel');
+    const bestLabel = $('#bestLabel');
+    const buyLabel = $('#buyLabel');
+    const nextCostLabel = $('#nextCost');
+    const milestoneBar = $('#milestoneBar');
+    const milestoneInfo = $('#milestoneInfo');
+    const milestoneCount = $('#milestoneCount');
+    const cpcLabel = $('#cpcLabel');
+    const rebirthPreview = $('#rebirthPreview');
+    const freeTimer = $('#freeTimer');
+
+    const toast = $('#toast');
+
+    // ===== Tabs =====
+    const tabs = { upgrade: $('#tab-upgrade'), rewards: $('#tab-rewards'), rebirth: $('#tab-rebirth'), settings: $('#tab-settings') };
+    $$('.tabbar button').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.tab)));
+    function selectTab(name) {
+      for (const [k, el] of Object.entries(tabs)) {
+        el.classList.toggle('hidden', k !== name);
+      }
+      $$('.tabbar button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+    }
+
+    // ===== Buy Amount =====
+    $$('.buy-amount button').forEach(btn => btn.addEventListener('click', () => {
+      S.buyAmt = parseInt(btn.dataset.buy);
+      buyLabel.textContent = 'x' + S.buyAmt;
+      showToast(`구매 수량이 x${S.buyAmt} 로 설정되었습니다.`);
+      refreshCosts(); save();
+    }));
+
+    // ===== Upgrade =====
+    $('#upgradeBtn').addEventListener('click', () => {
+      const n = S.buyAmt;
+      const cost = costFor(S.level, n);
+      if (S.gold >= cost) {
+        S.gold -= cost;
+        S.level += n;
+        S.best = Math.max(S.best, S.level);
+        processMilestones();
+        refreshAll(); save();
+      } else {
+        showToast('골드가 부족합니다.');
+      }
+    });
+
+    // ===== Click Income =====
+    $('#clickBtn').addEventListener('click', () => {
+      S.gold += cpc();
+      refreshGold(); save();
+    });
+
+    // ===== Skip with Tokens =====
+    $$('button[data-skip]').forEach(btn => btn.addEventListener('click', () => {
+      const t = parseInt(btn.dataset.skip); // tokens to spend
+      if (S.tokens < t) return showToast('스킵 토큰이 부족합니다.');
+      const levels = t * 5;
+      S.tokens -= t;
+      S.level += levels;
+      S.best = Math.max(S.best, S.level);
+      processMilestones();
+      showToast(`스킵 성공! 레벨 +${levels}`);
+      refreshAll(); save();
+    }));
+
+    // ===== Free Reward (Cooldown) =====
+    const FREE_CD_MS = 5 * 60 * 1000; // 5분
+    $('#claimFreeBtn').addEventListener('click', () => {
+      const t = now();
+      if (t < S.nextFreeAt) return showToast('아직 쿨다운입니다.');
+      S.tokens += 1;
+      S.gold += 25 * multiplier();
+      S.nextFreeAt = t + FREE_CD_MS;
+      showToast('무료 보상 지급: 스킵 토큰 1, 골드 +보너스');
+      refreshAll(); save();
+    });
+
+    // ===== Missions =====
+    const MISSIONS = [
+      { id: 'L25', name: '레벨 25 달성', need: 25, reward: 2 },
+      { id: 'L50', name: '레벨 50 달성', need: 50, reward: 5 },
+      { id: 'L100', name: '레벨 100 달성', need: 100, reward: 12 },
+      { id: 'L200', name: '레벨 200 달성', need: 200, reward: 30 },
+    ];
+
+    const missionList = $('#missionList');
+    function renderMissions() {
+      missionList.innerHTML = '';
+      MISSIONS.forEach(m => {
+        const done = S.level >= m.need;
+        const claimed = !!S.missions[m.id];
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `<div><div><strong>${m.name}</strong></div><div class="mini muted">보상: 스킵 토큰 ${m.reward}개</div></div>`;
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-green';
+        btn.textContent = claimed ? '완료됨' : (done ? '받기' : '미완료');
+        btn.disabled = claimed || !done;
+        btn.addEventListener('click', () => {
+          if (btn.disabled) return;
+          S.tokens += m.reward; S.missions[m.id] = true; save();
+          showToast(`${m.name} — 보상 수령! (+${m.reward} 토큰)`);
+          renderMissions(); refreshTokens();
+        });
+        row.appendChild(btn);
+        missionList.appendChild(row);
+      });
+    }
+
+    // ===== Milestones (every 25 levels) =====
+    function processMilestones() {
+      const reached = milestonesReached();
+      if (reached > S.milestonesClaimed) {
+        const gain = reached - S.milestonesClaimed; // new boxes
+        S.tokens += gain; S.milestonesClaimed = reached;
+        showToast(`마일스톤 보상: 스킵 토큰 +${gain}`);
+      }
+    }
+
+    // ===== Rebirth =====
+    $('#rebirthBtn').addEventListener('click', () => {
+      const gain = stonesGainPreview();
+      if (gain <= 0) return showToast('환생 보상이 없습니다. 좀 더 진행해보세요!');
+      if (!confirm(`환생하시겠습니까?\n이번 환생으로 환생석 ${gain}개를 획득합니다.`)) return;
+      S.stones += gain;
+      S.gold = 0; S.level = 0; S.best = 0; S.milestonesClaimed = 0;
+      showToast(`환생 완료! 환생석 +${gain} (총 ${S.stones})`);
+      refreshAll(); save();
+    });
+
+    // ===== Theme =====
+    const themeRoot = document.documentElement;
+    function applyTheme(t) {
+      S.theme = t; save();
+      themeRoot.dataset.theme = t;
+      if (t === 'light') {
+        themeRoot.style.setProperty('color-scheme', 'light');
+      } else if (t === 'dark') {
+        themeRoot.style.setProperty('color-scheme', 'dark');
+      } else {
+        themeRoot.style.removeProperty('color-scheme');
+      }
+    }
+    $('#themeToggle').addEventListener('click', () => {
+      const next = S.theme === 'auto' ? 'dark' : S.theme === 'dark' ? 'light' : 'auto';
+      applyTheme(next);
+      showToast(`테마: ${next}`);
+    });
+    $$('button[data-theme]').forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.theme)));
+
+    // ===== Save/Load Buttons =====
+    $('#saveBtn').addEventListener('click', () => { save(); showToast('저장 완료'); });
+    $('#exportBtn').addEventListener('click', () => {
+      const data = btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+      const io = $('#ioBox'); io.value = data; io.select(); document.execCommand('copy');
+      showToast('클립보드로 내보냈습니다. (설정 탭에서 파일로 저장 가능)');
+    });
+    $('#importBtn').addEventListener('click', () => {
+      const txt = $('#ioBox').value.trim(); if (!txt) return showToast('불러올 데이터가 없습니다.');
+      try {
+        const obj = JSON.parse(decodeURIComponent(escape(atob(txt))));
+        S = Object.assign(DefaultState(), obj); save(); refreshAll();
+        showToast('불러오기 완료');
+      } catch (e) { showToast('형식이 올바르지 않습니다.'); }
+    });
+    $('#downloadBtn').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(S)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'skip-game-save.json'; a.click(); URL.revokeObjectURL(a.href);
+    });
+    $('#hardResetBtn').addEventListener('click', () => {
+      if (!confirm('정말로 전체 초기화하시겠습니까? 저장 데이터가 삭제됩니다.')) return;
+      S = DefaultState(); save(); refreshAll(); showToast('초기화되었습니다.');
+    });
+
+    // ===== Ticker =====
+    function tick() {
+      const t = now();
+      const dt = clamp((t - S.lastTick) / 1000, 0, 5); // seconds, clamp for idle
+      S.gold += gps() * dt; // 아이들 수익
+      S.lastTick = t;
+      refreshGold();
+      refreshFreeTimer();
+      window.requestAnimationFrame(tick);
+    }
+
+    // ===== UI Refresh =====
+    function refreshGold() {
+      goldLabel.textContent = format(S.gold);
+    }
+    function refreshStats() {
+      gpsLabel.textContent = gps().toFixed(2);
+      gpsLabel2.textContent = gps().toFixed(2);
+      cpcLabel.textContent = cpc().toFixed(2);
+      levelLabel.textContent = S.level;
+      multLabel.textContent = 'x' + multiplier().toFixed(2);
+      stoneLabel.textContent = S.stones;
+      tokenLabel.textContent = S.tokens;
+      bestLabel.textContent = S.best;
+      rebirthPreview.textContent = stonesGainPreview() + ' 석';
+      milestoneCount.textContent = S.milestonesClaimed;
+    }
+    function refreshCosts() {
+      buyLabel.textContent = 'x' + S.buyAmt;
+      nextCostLabel.textContent = format(costFor(S.level, S.buyAmt));
+      const within = S.level % 25; const left = 25 - within;
+      milestoneInfo.textContent = within + ' / 25';
+      milestoneBar.style.width = ((within / 25) * 100).toFixed(1) + '%';
+    }
+    function refreshTokens() { tokenLabel.textContent = S.tokens; }
+
+    function refreshFreeTimer() {
+      const t = now();
+      if (t >= S.nextFreeAt) { freeTimer.textContent = '지금'; $('#claimFreeBtn').disabled = false; }
+      else {
+        const s = Math.ceil((S.nextFreeAt - t)/1000);
+        const m = Math.floor(s/60), r = s % 60;
+        freeTimer.textContent = `${m}분 ${r}초 후`; $('#claimFreeBtn').disabled = true;
+      }
+    }
+
+    function refreshAll() { refreshGold(); refreshStats(); refreshCosts(); renderMissions(); refreshFreeTimer(); }
+
+    // ===== Toast =====
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg; toast.style.display = 'block';
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.style.display = 'none', 1800);
+    }
+
+    // ===== Init =====
+    (function init(){
+      // default cooldown ready on first run
+      if (!S.nextFreeAt) S.nextFreeAt = now();
+      // theme
+      applyTheme(S.theme || 'auto');
+      // prime UI
+      refreshAll();
+      // start loop
+      window.requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>
