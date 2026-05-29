@@ -23,18 +23,17 @@
         display: flex;
         flex-direction: row;
 
-        /* 아이폰 가로모드 느낌 */
         justify-content: space-between;
         align-items: center;
 
-        padding: 30px;
+        padding: 20px;
     }
 
     .left-panel {
-        width: 35%;
+        width: 32%;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 18px;
     }
 
     .title {
@@ -49,8 +48,8 @@
 
     input {
         width: 100%;
-        padding: 16px;
-        font-size: 24px;
+        padding: 14px;
+        font-size: 22px;
         border-radius: 16px;
         border: none;
         outline: none;
@@ -60,15 +59,15 @@
 
     .button-group {
         display: flex;
-        gap: 15px;
+        gap: 12px;
     }
 
     button {
         flex: 1;
-        padding: 18px;
-        font-size: 22px;
+        padding: 16px;
+        font-size: 20px;
         border: none;
-        border-radius: 18px;
+        border-radius: 16px;
         color: white;
         cursor: pointer;
         transition: 0.2s;
@@ -87,25 +86,29 @@
     }
 
     .clock-area {
-        width: 60%;
+        width: 65%;
         height: 100%;
         display: flex;
         justify-content: center;
         align-items: center;
     }
 
+    .clock-wrapper {
+        position: relative;
+    }
+
     .clock {
-        width: 420px;
-        height: 420px;
-        border: 10px solid white;
+        width: 320px;
+        height: 320px;
+        border: 8px solid white;
         border-radius: 50%;
         position: relative;
         background: #111;
     }
 
     .center-dot {
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
         background: white;
         border-radius: 50%;
         position: absolute;
@@ -125,36 +128,34 @@
     }
 
     .second-hand {
-        width: 4px;
-        height: 170px;
+        width: 3px;
+        height: 130px;
         background: #ff453a;
     }
 
     .minute-hand {
-        width: 6px;
-        height: 140px;
+        width: 5px;
+        height: 110px;
         background: white;
     }
 
     .hour-hand {
-        width: 10px;
-        height: 100px;
+        width: 8px;
+        height: 80px;
         background: white;
     }
 
     .number {
         position: absolute;
-        font-size: 24px;
+        font-size: 22px;
         font-weight: bold;
         transform: translate(-50%, -50%);
     }
 
     .digital {
-        position: absolute;
-        bottom: -70px;
-        width: 100%;
+        margin-top: 25px;
         text-align: center;
-        font-size: 36px;
+        font-size: 32px;
         font-weight: bold;
         letter-spacing: 2px;
     }
@@ -184,22 +185,42 @@
 </div>
 
 <div class="clock-area">
-    <div class="clock" id="clock">
+    <div class="clock-wrapper">
 
-        <div class="number" style="top: 8%; left:50%;">12</div>
-        <div class="number" style="top:50%; left:92%;">3</div>
-        <div class="number" style="top:92%; left:50%;">6</div>
-        <div class="number" style="top:50%; left:8%;">9</div>
+        <div class="clock" id="clock">
 
-        <div class="hand hour-hand" id="hourHand"></div>
-        <div class="hand minute-hand" id="minuteHand"></div>
-        <div class="hand second-hand" id="secondHand"></div>
+            <!-- 숫자 자동 생성 -->
+            <script>
+                for (let i = 1; i <= 12; i++) {
 
-        <div class="center-dot"></div>
+                    const angle = (i - 3) * 30 * Math.PI / 180;
+
+                    const radius = 130;
+
+                    const x = 160 + radius * Math.cos(angle);
+                    const y = 160 + radius * Math.sin(angle);
+
+                    document.write(`
+                        <div class="number"
+                             style="left:${x}px; top:${y}px;">
+                             ${i}
+                        </div>
+                    `);
+                }
+            </script>
+
+            <div class="hand hour-hand" id="hourHand"></div>
+            <div class="hand minute-hand" id="minuteHand"></div>
+            <div class="hand second-hand" id="secondHand"></div>
+
+            <div class="center-dot"></div>
+
+        </div>
 
         <div class="digital" id="digitalTime">
             12:00:00
         </div>
+
     </div>
 </div>
 
@@ -208,6 +229,7 @@
     let currentTime = new Date();
 
     function setTimeFromInput() {
+
         const input = document.getElementById("timeInput").value;
 
         const parts = input.split(":");
@@ -232,6 +254,7 @@
         }
 
         currentTime = new Date();
+
         currentTime.setHours(h);
         currentTime.setMinutes(m);
         currentTime.setSeconds(s);
@@ -288,6 +311,7 @@
     }
 
     function stopClock() {
+
         if (timer) {
             clearInterval(timer);
             timer = null;
