@@ -12,8 +12,6 @@
 
 <style>
 
-/* ===== 기존 스타일 그대로 ===== */
-
 *{
     margin:0;
     padding:0;
@@ -22,8 +20,7 @@
 }
 
 :root{
-    --bg:#000000;
-    --panel:#111111;
+    --bg:#000;
     --white:#f5f5f7;
     --red:#ff453a;
     --green:#34c759;
@@ -36,10 +33,12 @@ body{
     width:100vw;
     min-height:100dvh;
     overflow:hidden;
+
     display:flex;
     justify-content:space-between;
     align-items:center;
     gap:24px;
+
     padding:max(20px, env(safe-area-inset-top))
             max(20px, env(safe-area-inset-right))
             max(20px, env(safe-area-inset-bottom))
@@ -54,9 +53,7 @@ body{
 }
 
 .title{font-size:38px;font-weight:700;}
-
 .version{color:var(--gray);font-size:16px;}
-
 .label{font-size:18px;opacity:0.85;}
 
 input{
@@ -68,6 +65,23 @@ input{
     background:#1c1c1e;
     color:white;
     font-size:28px;
+}
+
+.preset-group{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+}
+
+.preset-group button{
+    flex:1 1 45%;
+    padding:12px;
+    font-size:16px;
+    border:none;
+    border-radius:14px;
+    background:#2c2c2e;
+    color:white;
+    cursor:pointer;
 }
 
 .button-group{
@@ -90,24 +104,6 @@ button:active{transform:scale(0.96);}
 
 .start-btn{background:var(--green);}
 .stop-btn{background:var(--red);}
-
-/* ===== 프리셋 버튼 ===== */
-
-.preset-group{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-}
-
-.preset-group button{
-    flex:1 1 45%;
-    font-size:18px;
-    padding:12px;
-    border-radius:14px;
-    background:#2c2c2e;
-}
-
-/* ===== 시계 ===== */
 
 .clock-area{
     flex:1;
@@ -137,8 +133,6 @@ button:active{transform:scale(0.96);}
     letter-spacing:3px;
 }
 
-/* ===== 반응형 ===== */
-
 @media (orientation: portrait){
     body{
         flex-direction:column;
@@ -148,10 +142,7 @@ button:active{transform:scale(0.96);}
     }
     .control-panel{width:100%;}
     .clock-svg{width:min(92vw, 460px);height:min(92vw, 460px);}
-    .digital{margin-bottom:28px;font-size:36px;}
-    .title{font-size:34px;}
-    input{font-size:24px;}
-    button{font-size:22px;}
+    .digital{font-size:36px;}
 }
 
 </style>
@@ -162,29 +153,23 @@ button:active{transform:scale(0.96);}
 <div class="control-panel">
 
     <div class="title">Precision Clock</div>
-
-    <div class="version">Version 1.0.1</div>
+    <div class="version">Version 1.0.2</div>
 
     <div class="label">시작 시각 입력 (HH:MM:SS)</div>
 
-    <input type="text" id="timeInput" value="12:00:00">
+    <input id="timeInput" value="12:00:00">
 
-    <!-- 프리셋 버튼 -->
     <div class="preset-group">
-
         <button onclick="setPreset('10:10:00')">10:10</button>
         <button onclick="setPreset('10:55:00')">10:55</button>
         <button onclick="setPreset('11:03:00')">11:03</button>
         <button onclick="setPreset('11:15:00')">11:15</button>
         <button onclick="setPreset('11:40:00')">11:40</button>
-
     </div>
 
     <div class="button-group">
-
         <button class="start-btn" onclick="startClock()">시작</button>
         <button class="stop-btn" onclick="stopClock()">멈춤</button>
-
     </div>
 
 </div>
@@ -193,8 +178,10 @@ button:active{transform:scale(0.96);}
 
 <svg class="clock-svg" viewBox="0 0 500 500">
 
-    <circle cx="250" cy="250" r="230" fill="#050505"
-            stroke="white" stroke-width="10"/>
+    <circle cx="250" cy="250" r="230"
+            fill="#050505"
+            stroke="white"
+            stroke-width="10"/>
 
     <g id="ticks"></g>
     <g id="numbers"></g>
@@ -218,96 +205,104 @@ button:active{transform:scale(0.96);}
 
 <script>
 
-/* ===== 시계 기본 ===== */
+/* ===== 상태 ===== */
 
 let timer = null;
-let currentTime = new Date();
+let baseTimestamp = null;
+let baseTime = null;
 
 /* ===== 프리셋 ===== */
 
-function setPreset(timeStr){
-    document.getElementById("timeInput").value = timeStr;
+function setPreset(t){
+    document.getElementById("timeInput").value = t;
 }
 
-/* ===== 멈춤 ===== */
+/* ===== 눈금 ===== */
 
-function stopClock(){
+const ticksGroup = document.getElementById("ticks");
+const numbersGroup = document.getElementById("numbers");
 
-    if(timer){
-        clearInterval(timer);
-        timer = null;
-    }
+for(let i=0;i<60;i++){
+    const a=(i*6-90)*Math.PI/180;
+    const major=i%5===0;
+    const r1=major?195:205, r2=220;
 
-    // ⭐ 추가: 현재 시간 input에 저장
-    const h = String(currentTime.getHours()).padStart(2,"0");
-    const m = String(currentTime.getMinutes()).padStart(2,"0");
-    const s = String(currentTime.getSeconds()).padStart(2,"0");
+    const line=document.createElementNS("http://www.w3.org/2000/svg","line");
 
-    document.getElementById("timeInput").value = `${h}:${m}:${s}`;
+    line.setAttribute("x1",250+r1*Math.cos(a));
+    line.setAttribute("y1",250+r1*Math.sin(a));
+    line.setAttribute("x2",250+r2*Math.cos(a));
+    line.setAttribute("y2",250+r2*Math.sin(a));
+
+    line.setAttribute("stroke","white");
+    line.setAttribute("stroke-width",major?4:2);
+    line.setAttribute("opacity",major?1:0.5);
+
+    ticksGroup.appendChild(line);
 }
 
-/* ===== 입력 처리 ===== */
+for(let i=1;i<=12;i++){
+    const a=((i*30)-90)*Math.PI/180;
+    const r=165;
 
-function setTimeFromInput(){
+    const text=document.createElementNS("http://www.w3.org/2000/svg","text");
 
-    const input = document.getElementById("timeInput").value;
-    const parts = input.split(":");
+    text.setAttribute("x",250+r*Math.cos(a));
+    text.setAttribute("y",250+r*Math.sin(a));
+    text.setAttribute("class","clock-number");
+    text.textContent=i;
 
-    if(parts.length !== 3){
-        alert("HH:MM:SS 형식 입력");
-        return false;
-    }
+    numbersGroup.appendChild(text);
+}
 
-    const h = parseInt(parts[0]);
-    const m = parseInt(parts[1]);
-    const s = parseInt(parts[2]);
+/* ===== 입력 파싱 ===== */
+
+function parseInput(){
+    const p=document.getElementById("timeInput").value.split(":");
+    if(p.length!==3) return null;
+
+    const h=+p[0], m=+p[1], s=+p[2];
 
     if(
-        isNaN(h) || isNaN(m) || isNaN(s) ||
-        h < 0 || h > 23 ||
-        m < 0 || m > 59 ||
-        s < 0 || s > 59
-    ){
-        alert("올바른 시간 입력");
-        return false;
-    }
+        isNaN(h)||isNaN(m)||isNaN(s)||
+        h<0||h>23||m<0||m>59||s<0||s>59
+    ) return null;
 
-    currentTime = new Date();
-    currentTime.setHours(h);
-    currentTime.setMinutes(m);
-    currentTime.setSeconds(s);
-
-    updateClock();
-    return true;
+    const d=new Date();
+    d.setHours(h,m,s,0);
+    return d;
 }
 
-/* ===== 시계 업데이트 ===== */
+/* ===== 핵심: 드리프트 없는 업데이트 ===== */
 
 function updateClock(){
 
-    const h = currentTime.getHours();
-    const m = currentTime.getMinutes();
-    const s = currentTime.getSeconds();
+    if(!baseTimestamp || !baseTime) return;
 
-    const hourDeg = (h % 12) * 30 + m * 0.5;
-    const minuteDeg = m * 6 + s * 0.1;
-    const secondDeg = s * 6;
+    const now = Date.now();
+    const diff = now - baseTimestamp;
+
+    const current = new Date(baseTime.getTime() + diff);
+
+    const h=current.getHours();
+    const m=current.getMinutes();
+    const s=current.getSeconds();
+
+    const hourDeg=(h%12)*30+m*0.5;
+    const minDeg=m*6+s*0.1;
+    const secDeg=s*6;
 
     document.getElementById("hourHand")
-        .setAttribute("transform", `rotate(${hourDeg} 250 250)`);
+        .setAttribute("transform",`rotate(${hourDeg} 250 250)`);
 
     document.getElementById("minuteHand")
-        .setAttribute("transform", `rotate(${minuteDeg} 250 250)`);
+        .setAttribute("transform",`rotate(${minDeg} 250 250)`);
 
     document.getElementById("secondHand")
-        .setAttribute("transform", `rotate(${secondDeg} 250 250)`);
-
-    const hh = String(h).padStart(2,"0");
-    const mm = String(m).padStart(2,"0");
-    const ss = String(s).padStart(2,"0");
+        .setAttribute("transform",`rotate(${secDeg} 250 250)`);
 
     document.getElementById("digitalTime").innerText =
-        `${hh}:${mm}:${ss}`;
+        `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
 }
 
 /* ===== 시작 ===== */
@@ -316,19 +311,47 @@ function startClock(){
 
     stopClock();
 
-    const ok = setTimeFromInput();
-    if(!ok) return;
+    const t=parseInput();
+    if(!t){
+        alert("시간 오류");
+        return;
+    }
 
-    timer = setInterval(()=>{
+    baseTime=t;
+    baseTimestamp=Date.now();
 
-        currentTime.setSeconds(currentTime.getSeconds() + 1);
-        updateClock();
+    updateClock();
 
-    },1000);
+    timer=setInterval(updateClock,100);
 }
 
-/* ===== 초기 ===== */
+/* ===== 멈춤 ===== */
 
+function stopClock(){
+
+    if(timer){
+        clearInterval(timer);
+        timer=null;
+    }
+
+    if(baseTimestamp && baseTime){
+
+        const now=Date.now();
+        const diff=now-baseTimestamp;
+
+        const current=new Date(baseTime.getTime()+diff);
+
+        document.getElementById("timeInput").value =
+            `${String(current.getHours()).padStart(2,"0")}:`+
+            `${String(current.getMinutes()).padStart(2,"0")}:`+
+            `${String(current.getSeconds()).padStart(2,"0")}`;
+
+        baseTime=current;
+        baseTimestamp=null;
+    }
+}
+
+/* 초기 */
 updateClock();
 
 </script>
