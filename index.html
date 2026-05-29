@@ -3,27 +3,22 @@
 <head>
 
 <meta charset="UTF-8" />
-
-<meta
-    name="viewport"
-    content="width=device-width,
-             initial-scale=1.0,
-             viewport-fit=cover"
-/>
+<meta name="viewport"
+      content="width=device-width,
+               initial-scale=1.0,
+               viewport-fit=cover"/>
 
 <title>Precision Clock</title>
 
 <style>
 
+/* ===== 기존 스타일 그대로 ===== */
+
 *{
     margin:0;
     padding:0;
     box-sizing:border-box;
-
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        sans-serif;
+    font-family:-apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 :root{
@@ -36,210 +31,127 @@
 }
 
 body{
-
     background:var(--bg);
     color:var(--white);
-
     width:100vw;
     min-height:100dvh;
-
     overflow:hidden;
-
     display:flex;
     justify-content:space-between;
     align-items:center;
-
     gap:24px;
-
-    padding:
-        max(20px, env(safe-area-inset-top))
-        max(20px, env(safe-area-inset-right))
-        max(20px, env(safe-area-inset-bottom))
-        max(20px, env(safe-area-inset-left));
+    padding:max(20px, env(safe-area-inset-top))
+            max(20px, env(safe-area-inset-right))
+            max(20px, env(safe-area-inset-bottom))
+            max(20px, env(safe-area-inset-left));
 }
 
-/* 좌측 컨트롤 */
-
 .control-panel{
-
     width:34%;
-
     display:flex;
     flex-direction:column;
-
     gap:18px;
 }
 
-.title{
+.title{font-size:38px;font-weight:700;}
 
-    font-size:38px;
-    font-weight:700;
-}
+.version{color:var(--gray);font-size:16px;}
 
-.version{
-
-    color:var(--gray);
-
-    font-size:16px;
-}
-
-.label{
-
-    font-size:18px;
-    opacity:0.85;
-}
+.label{font-size:18px;opacity:0.85;}
 
 input{
-
     width:100%;
-
     padding:16px;
-
     border:none;
     outline:none;
-
     border-radius:18px;
-
     background:#1c1c1e;
     color:white;
-
     font-size:28px;
 }
 
 .button-group{
-
     display:flex;
     gap:14px;
 }
 
 button{
-
     flex:1;
-
     border:none;
-
     border-radius:18px;
-
     padding:18px;
-
     font-size:24px;
-
     color:white;
-
     cursor:pointer;
-
     transition:0.15s;
 }
 
-button:active{
+button:active{transform:scale(0.96);}
 
-    transform:scale(0.96);
+.start-btn{background:var(--green);}
+.stop-btn{background:var(--red);}
+
+/* ===== 프리셋 버튼 ===== */
+
+.preset-group{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
 }
 
-.start-btn{
-
-    background:var(--green);
+.preset-group button{
+    flex:1 1 45%;
+    font-size:18px;
+    padding:12px;
+    border-radius:14px;
+    background:#2c2c2e;
 }
 
-.stop-btn{
-
-    background:var(--red);
-}
-
-/* 시계 영역 */
+/* ===== 시계 ===== */
 
 .clock-area{
-
     flex:1;
-
     display:flex;
     flex-direction:column;
-
     justify-content:center;
     align-items:center;
 }
 
-/* SVG 시계 */
-
 .clock-svg{
-
     width:min(76vw, 430px);
     height:min(76vw, 430px);
 }
 
-/* 숫자 */
-
 .clock-number{
-
     fill:white;
-
     font-size:22px;
-
     font-weight:700;
-
     text-anchor:middle;
     dominant-baseline:middle;
 }
 
-/* 디지털 시계 */
-
 .digital{
-
     margin-top:24px;
-
     font-size:42px;
     font-weight:700;
-
     letter-spacing:3px;
 }
 
-/* 세로 대응 */
+/* ===== 반응형 ===== */
 
 @media (orientation: portrait){
-
     body{
-
         flex-direction:column;
-
         justify-content:flex-start;
-
         overflow:auto;
-
         gap:28px;
     }
-
-    .control-panel{
-
-        width:100%;
-    }
-
-    .clock-svg{
-
-        width:min(92vw, 460px);
-        height:min(92vw, 460px);
-    }
-
-    .digital{
-
-        margin-bottom:28px;
-
-        font-size:36px;
-    }
-
-    .title{
-
-        font-size:34px;
-    }
-
-    input{
-
-        font-size:24px;
-    }
-
-    button{
-
-        font-size:22px;
-    }
+    .control-panel{width:100%;}
+    .clock-svg{width:min(92vw, 460px);height:min(92vw, 460px);}
+    .digital{margin-bottom:28px;font-size:36px;}
+    .title{font-size:34px;}
+    input{font-size:24px;}
+    button{font-size:22px;}
 }
 
 </style>
@@ -247,403 +159,175 @@ button:active{
 
 <body>
 
-<!-- 좌측 -->
-
 <div class="control-panel">
 
-    <div class="title">
-        Precision Clock
-    </div>
+    <div class="title">Precision Clock</div>
 
-    <div class="version">
-        Version 1.0.0
-    </div>
+    <div class="version">Version 1.0.1</div>
 
-    <div class="label">
-        시작 시각 입력 (HH:MM:SS)
-    </div>
+    <div class="label">시작 시각 입력 (HH:MM:SS)</div>
 
-    <input
-        type="text"
-        id="timeInput"
-        value="09:50:00"
-    >
+    <input type="text" id="timeInput" value="12:00:00">
+
+    <!-- 프리셋 버튼 -->
+    <div class="preset-group">
+
+        <button onclick="setPreset('10:10:00')">10:10</button>
+        <button onclick="setPreset('10:55:00')">10:55</button>
+        <button onclick="setPreset('11:03:00')">11:03</button>
+        <button onclick="setPreset('11:15:00')">11:15</button>
+        <button onclick="setPreset('11:40:00')">11:40</button>
+
+    </div>
 
     <div class="button-group">
 
-        <button
-            class="start-btn"
-            onclick="startClock()"
-        >
-            시작
-        </button>
-
-        <button
-            class="stop-btn"
-            onclick="stopClock()"
-        >
-            멈춤
-        </button>
+        <button class="start-btn" onclick="startClock()">시작</button>
+        <button class="stop-btn" onclick="stopClock()">멈춤</button>
 
     </div>
 
 </div>
 
-<!-- 시계 -->
-
 <div class="clock-area">
 
-<svg
-    class="clock-svg"
-    id="clockSvg"
-    viewBox="0 0 500 500"
->
+<svg class="clock-svg" viewBox="0 0 500 500">
 
-    <!-- 배경 -->
-
-    <circle
-        cx="250"
-        cy="250"
-        r="230"
-        fill="#050505"
-        stroke="white"
-        stroke-width="10"
-    />
-
-    <!-- 눈금 생성 -->
+    <circle cx="250" cy="250" r="230" fill="#050505"
+            stroke="white" stroke-width="10"/>
 
     <g id="ticks"></g>
-
-    <!-- 숫자 생성 -->
-
     <g id="numbers"></g>
 
-    <!-- 시침 -->
+    <line id="hourHand" x1="250" y1="250" x2="250" y2="150"
+          stroke="white" stroke-width="10" stroke-linecap="round"/>
 
-    <line
-        id="hourHand"
-        x1="250"
-        y1="250"
-        x2="250"
-        y2="150"
+    <line id="minuteHand" x1="250" y1="250" x2="250" y2="105"
+          stroke="white" stroke-width="6" stroke-linecap="round"/>
 
-        stroke="white"
-        stroke-width="10"
-        stroke-linecap="round"
-    />
+    <line id="secondHand" x1="250" y1="270" x2="250" y2="80"
+          stroke="#ff453a" stroke-width="3" stroke-linecap="round"/>
 
-    <!-- 분침 -->
-
-    <line
-        id="minuteHand"
-        x1="250"
-        y1="250"
-        x2="250"
-        y2="105"
-
-        stroke="white"
-        stroke-width="6"
-        stroke-linecap="round"
-    />
-
-    <!-- 초침 -->
-
-    <line
-        id="secondHand"
-        x1="250"
-        y1="270"
-        x2="250"
-        y2="80"
-
-        stroke="#ff453a"
-        stroke-width="3"
-        stroke-linecap="round"
-    />
-
-    <!-- 중앙 -->
-
-    <circle
-        cx="250"
-        cy="250"
-        r="10"
-        fill="white"
-    />
+    <circle cx="250" cy="250" r="10" fill="white"/>
 
 </svg>
 
-<div
-    class="digital"
-    id="digitalTime"
->
-    12:00:00
-</div>
+<div class="digital" id="digitalTime">12:00:00</div>
 
 </div>
 
 <script>
 
-/* SVG */
-
-const ticksGroup =
-    document.getElementById("ticks");
-
-const numbersGroup =
-    document.getElementById("numbers");
-
-/* 눈금 생성 */
-
-for(let i=0; i<60; i++){
-
-    const angle =
-        (i * 6 - 90)
-        * Math.PI / 180;
-
-    const isMajor =
-        i % 5 === 0;
-
-    const outer = 220;
-
-    const inner =
-        isMajor ? 195 : 205;
-
-    const x1 =
-        250 + inner * Math.cos(angle);
-
-    const y1 =
-        250 + inner * Math.sin(angle);
-
-    const x2 =
-        250 + outer * Math.cos(angle);
-
-    const y2 =
-        250 + outer * Math.sin(angle);
-
-    const line =
-        document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "line"
-        );
-
-    line.setAttribute("x1", x1);
-    line.setAttribute("y1", y1);
-
-    line.setAttribute("x2", x2);
-    line.setAttribute("y2", y2);
-
-    line.setAttribute(
-        "stroke",
-        "white"
-    );
-
-    line.setAttribute(
-        "stroke-width",
-        isMajor ? "4" : "2"
-    );
-
-    line.setAttribute(
-        "opacity",
-        isMajor ? "1" : "0.55"
-    );
-
-    line.setAttribute(
-        "stroke-linecap",
-        "round"
-    );
-
-    ticksGroup.appendChild(line);
-}
-
-/* 숫자 생성 */
-
-for(let i=1; i<=12; i++){
-
-    const angle =
-        ((i * 30) - 90)
-        * Math.PI / 180;
-
-    const radius = 165;
-
-    const x =
-        250 + radius * Math.cos(angle);
-
-    const y =
-        250 + radius * Math.sin(angle);
-
-    const text =
-        document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "text"
-        );
-
-    text.setAttribute("x", x);
-    text.setAttribute("y", y);
-
-    text.setAttribute(
-        "class",
-        "clock-number"
-    );
-
-    text.textContent = i;
-
-    numbersGroup.appendChild(text);
-}
-
-/* 시간 */
+/* ===== 시계 기본 ===== */
 
 let timer = null;
-
 let currentTime = new Date();
 
-/* 입력 */
+/* ===== 프리셋 ===== */
+
+function setPreset(timeStr){
+    document.getElementById("timeInput").value = timeStr;
+}
+
+/* ===== 멈춤 ===== */
+
+function stopClock(){
+
+    if(timer){
+        clearInterval(timer);
+        timer = null;
+    }
+
+    // ⭐ 추가: 현재 시간 input에 저장
+    const h = String(currentTime.getHours()).padStart(2,"0");
+    const m = String(currentTime.getMinutes()).padStart(2,"0");
+    const s = String(currentTime.getSeconds()).padStart(2,"0");
+
+    document.getElementById("timeInput").value = `${h}:${m}:${s}`;
+}
+
+/* ===== 입력 처리 ===== */
 
 function setTimeFromInput(){
 
-    const input =
-        document
-        .getElementById("timeInput")
-        .value;
-
-    const parts =
-        input.split(":");
+    const input = document.getElementById("timeInput").value;
+    const parts = input.split(":");
 
     if(parts.length !== 3){
-
         alert("HH:MM:SS 형식 입력");
-
         return false;
     }
 
-    const h =
-        parseInt(parts[0]);
-
-    const m =
-        parseInt(parts[1]);
-
-    const s =
-        parseInt(parts[2]);
+    const h = parseInt(parts[0]);
+    const m = parseInt(parts[1]);
+    const s = parseInt(parts[2]);
 
     if(
-        isNaN(h) ||
-        isNaN(m) ||
-        isNaN(s) ||
-
+        isNaN(h) || isNaN(m) || isNaN(s) ||
         h < 0 || h > 23 ||
         m < 0 || m > 59 ||
         s < 0 || s > 59
     ){
-
         alert("올바른 시간 입력");
-
         return false;
     }
 
     currentTime = new Date();
-
     currentTime.setHours(h);
     currentTime.setMinutes(m);
     currentTime.setSeconds(s);
 
     updateClock();
-
     return true;
 }
 
-/* 시계 업데이트 */
+/* ===== 시계 업데이트 ===== */
 
 function updateClock(){
 
-    const h =
-        currentTime.getHours();
+    const h = currentTime.getHours();
+    const m = currentTime.getMinutes();
+    const s = currentTime.getSeconds();
 
-    const m =
-        currentTime.getMinutes();
+    const hourDeg = (h % 12) * 30 + m * 0.5;
+    const minuteDeg = m * 6 + s * 0.1;
+    const secondDeg = s * 6;
 
-    const s =
-        currentTime.getSeconds();
+    document.getElementById("hourHand")
+        .setAttribute("transform", `rotate(${hourDeg} 250 250)`);
 
-    const hourDeg =
-        (h % 12) * 30 +
-        m * 0.5;
+    document.getElementById("minuteHand")
+        .setAttribute("transform", `rotate(${minuteDeg} 250 250)`);
 
-    const minuteDeg =
-        m * 6 +
-        s * 0.1;
+    document.getElementById("secondHand")
+        .setAttribute("transform", `rotate(${secondDeg} 250 250)`);
 
-    const secondDeg =
-        s * 6;
+    const hh = String(h).padStart(2,"0");
+    const mm = String(m).padStart(2,"0");
+    const ss = String(s).padStart(2,"0");
 
-    document
-        .getElementById("hourHand")
-        .setAttribute(
-            "transform",
-            `rotate(${hourDeg} 250 250)`
-        );
-
-    document
-        .getElementById("minuteHand")
-        .setAttribute(
-            "transform",
-            `rotate(${minuteDeg} 250 250)`
-        );
-
-    document
-        .getElementById("secondHand")
-        .setAttribute(
-            "transform",
-            `rotate(${secondDeg} 250 250)`
-        );
-
-    const hh =
-        String(h).padStart(2,"0");
-
-    const mm =
-        String(m).padStart(2,"0");
-
-    const ss =
-        String(s).padStart(2,"0");
-
-    document
-        .getElementById("digitalTime")
-        .innerText =
-            `${hh}:${mm}:${ss}`;
+    document.getElementById("digitalTime").innerText =
+        `${hh}:${mm}:${ss}`;
 }
 
-/* 시작 */
+/* ===== 시작 ===== */
 
 function startClock(){
 
     stopClock();
 
-    const ok =
-        setTimeFromInput();
-
+    const ok = setTimeFromInput();
     if(!ok) return;
 
-    timer =
-        setInterval(()=>{
+    timer = setInterval(()=>{
 
-            currentTime.setSeconds(
-                currentTime.getSeconds() + 1
-            );
+        currentTime.setSeconds(currentTime.getSeconds() + 1);
+        updateClock();
 
-            updateClock();
-
-        },1000);
+    },1000);
 }
 
-/* 멈춤 */
-
-function stopClock(){
-
-    if(timer){
-
-        clearInterval(timer);
-
-        timer = null;
-    }
-}
-
-/* 초기 */
+/* ===== 초기 ===== */
 
 updateClock();
 
